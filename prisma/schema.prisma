@@ -1,0 +1,627 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Level {
+  id             Int              @id @default(autoincrement())
+  name           String
+  isActive       Boolean          @default(true)
+  profile_levels profile_levels[]
+  profile_sports profile_sports[]
+}
+
+model Profile {
+  id                Int                 @id @default(autoincrement())
+  id_user           Int                 @unique
+  lastname          String
+  name              String
+  rating            Float
+  age               Int
+  activePlay        Boolean             @default(false)
+  isActive          Boolean             @default(true)
+  profileImg        String?
+  birthDate         DateTime?
+  description       String?
+  zone              String?
+  User              User                @relation(fields: [id_user], references: [id])
+  ProfileStatistics ProfileStatistics[]
+  RecentActivity    RecentActivity[]
+  SocialMedia       SocialMedia[]
+  profile_levels    profile_levels[]
+  profile_sports    profile_sports[]
+}
+
+model ProfileStatistics {
+  idProfile    Int
+  idStatistics Int
+  Profile      Profile    @relation(fields: [idProfile], references: [id])
+  Statistics   Statistics @relation(fields: [idStatistics], references: [id])
+
+  @@id([idProfile, idStatistics])
+}
+
+model RecentActivity {
+  id        Int     @id @default(autoincrement())
+  idProfile Int
+  isActive  Boolean @default(true)
+  Profile   Profile @relation(fields: [idProfile], references: [id])
+}
+
+model SocialMedia {
+  id        Int     @id @default(autoincrement())
+  idProfile Int
+  network   String
+  isActive  Boolean @default(true)
+  Profile   Profile @relation(fields: [idProfile], references: [id])
+}
+
+model Sports {
+  id             Int              @id @default(autoincrement())
+  name           String
+  isActive       Boolean          @default(true)
+  maxPlayers     Int              @default(11)
+  minPlayers     Int              @default(2)
+  profile_sports profile_sports[]
+  rooms          rooms[]
+  teams          teams[]
+}
+
+model Statistics {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  valueRating       Float
+  valuePersen       Int
+  valueGamesWins    Int
+  valueGamesPlay    Int
+  valueAsistence    Int
+  isActive          Boolean             @default(true)
+  ProfileStatistics ProfileStatistics[]
+}
+
+model User {
+  id                                          Int                        @id @default(autoincrement())
+  email                                       String                     @unique
+  password                                    String
+  name                                        String?
+  createdAt                                   DateTime                   @default(now())
+  authCode                                    String
+  picture                                     String
+  sub                                         String                     @unique
+  Profile                                     Profile?
+  match_chat_messages                         match_chat_messages[]
+  match_confirmations                         match_confirmations[]
+  notifications                               notifications[]
+  player_ratings_player_ratings_ratedIdToUser player_ratings[]           @relation("player_ratings_ratedIdToUser")
+  player_ratings_player_ratings_raterIdToUser player_ratings[]           @relation("player_ratings_raterIdToUser")
+  room_invitations                            room_invitations[]
+  room_participants                           room_participants[]
+  rooms                                       rooms[]
+  team_invitations                            team_invitations[]
+  team_match_confirmations                    team_match_confirmations[]
+  team_members                                team_members[]
+  team_players                                team_players[]
+  team_venue_votes                            team_venue_votes[]
+  teams                                       teams[]
+  venue_votes                                 venue_votes[]
+}
+
+model match_chat_messages {
+  id          String      @id
+  chatId      String
+  userId      Int
+  content     String
+  type        String      @default("text")
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  match_chats match_chats @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  User        User        @relation(fields: [userId], references: [id])
+
+  @@index([chatId, createdAt])
+  @@index([userId])
+}
+
+model match_chats {
+  id                  String                @id
+  matchId             String
+  matchType           String
+  participantType     String
+  roomId              String?
+  teamId              Int?
+  status              String                @default("active")
+  createdAt           DateTime              @default(now())
+  expiresAt           DateTime
+  deletedAt           DateTime?
+  match_chat_messages match_chat_messages[]
+
+  @@index([expiresAt])
+  @@index([matchId])
+  @@index([status])
+}
+
+model match_confirmations {
+  id        String   @id
+  matchId   String
+  userId    Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  matches   matches  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([matchId, userId])
+}
+
+model match_requests {
+  id                                           String    @id
+  requestingRoomId                             String
+  requestedRoomId                              String
+  message                                      String?
+  status                                       String    @default("pending")
+  createdAt                                    DateTime  @default(now())
+  respondedAt                                  DateTime?
+  rooms_match_requests_requestedRoomIdTorooms  rooms     @relation("match_requests_requestedRoomIdTorooms", fields: [requestedRoomId], references: [id], onDelete: Cascade)
+  rooms_match_requests_requestingRoomIdTorooms rooms     @relation("match_requests_requestingRoomIdTorooms", fields: [requestingRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([requestingRoomId, requestedRoomId])
+}
+
+model match_results {
+  id         String   @id
+  matchId    String   @unique
+  room1Score Int      @default(0)
+  room2Score Int      @default(0)
+  winnerId   String?
+  createdAt  DateTime @default(now())
+  matches    matches  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model matches {
+  id                           String                @id
+  room1Id                      String
+  room2Id                      String
+  venue                        String?
+  address                      String?
+  scheduledAt                  DateTime
+  status                       String                @default("pending_venue_voting")
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime
+  match_confirmations          match_confirmations[]
+  match_results                match_results?
+  rooms_matches_room1IdTorooms rooms                 @relation("matches_room1IdTorooms", fields: [room1Id], references: [id])
+  rooms_matches_room2IdTorooms rooms                 @relation("matches_room2IdTorooms", fields: [room2Id], references: [id])
+  venue_votings                venue_votings[]
+}
+
+model notifications {
+  id        String    @id
+  userId    Int
+  type      String
+  title     String
+  message   String
+  data      Json?
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, read])
+}
+
+model player_ratings {
+  id                                String   @id
+  raterId                           Int
+  ratedId                           Int
+  matchId                           String
+  rating                            Int
+  comment                           String?
+  categories                        Json
+  createdAt                         DateTime @default(now())
+  User_player_ratings_ratedIdToUser User     @relation("player_ratings_ratedIdToUser", fields: [ratedId], references: [id])
+  User_player_ratings_raterIdToUser User     @relation("player_ratings_raterIdToUser", fields: [raterId], references: [id])
+
+  @@unique([raterId, ratedId, matchId])
+}
+
+model profile_levels {
+  idProfile Int
+  idLevel   Int
+  Level     Level   @relation(fields: [idLevel], references: [id])
+  Profile   Profile @relation(fields: [idProfile], references: [id])
+
+  @@id([idProfile, idLevel])
+}
+
+model profile_sports {
+  idProfile Int
+  idSport   Int
+  idLevel   Int
+  Level     Level   @relation(fields: [idLevel], references: [id])
+  Profile   Profile @relation(fields: [idProfile], references: [id])
+  Sports    Sports  @relation(fields: [idSport], references: [id])
+
+  @@id([idProfile, idSport])
+}
+
+model room_invitations {
+  id        String   @id
+  roomId    String
+  email     String
+  invitedBy Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  User      User     @relation(fields: [invitedBy], references: [id])
+  rooms     rooms    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, email])
+}
+
+model room_participants {
+  id       String   @id
+  roomId   String
+  userId   Int
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+  rooms    rooms    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  User     User     @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
+}
+
+model rooms {
+  id                                                    String              @id
+  name                                                  String              @db.VarChar(100)
+  description                                           String?
+  maxParticipants                                       Int                 @default(10)
+  currentParticipants                                   Int                 @default(0)
+  isPrivate                                             Boolean             @default(false)
+  password                                              String?
+  status                                                String              @default("waiting")
+  createdById                                           Int
+  sportId                                               Int
+  level                                                 String              @default("beginner")
+  location                                              String?
+  scheduledAt                                           DateTime?
+  createdAt                                             DateTime            @default(now())
+  updatedAt                                             DateTime
+  hasReservedVenue                                      Boolean             @default(false)
+  reservationNotes                                      String?
+  reservedAddress                                       String?
+  reservedDate                                          DateTime?
+  reservedTime                                          String?
+  reservedVenue                                         String?
+  match_requests_match_requests_requestedRoomIdTorooms  match_requests[]    @relation("match_requests_requestedRoomIdTorooms")
+  match_requests_match_requests_requestingRoomIdTorooms match_requests[]    @relation("match_requests_requestingRoomIdTorooms")
+  matches_matches_room1IdTorooms                        matches[]           @relation("matches_room1IdTorooms")
+  matches_matches_room2IdTorooms                        matches[]           @relation("matches_room2IdTorooms")
+  room_invitations                                      room_invitations[]
+  room_participants                                     room_participants[]
+  User                                                  User                @relation(fields: [createdById], references: [id])
+  Sports                                                Sports              @relation(fields: [sportId], references: [id])
+}
+
+model team_challenges {
+  id                                             String    @id
+  challengingTeamId                              Int
+  challengedTeamId                               Int
+  message                                        String?
+  proposedDateTime                               DateTime?
+  proposedVenue                                  String?
+  proposedAddress                                String?
+  status                                         String    @default("pending")
+  createdAt                                      DateTime  @default(now())
+  respondedAt                                    DateTime?
+  teams_team_challenges_challengedTeamIdToteams  teams     @relation("team_challenges_challengedTeamIdToteams", fields: [challengedTeamId], references: [id], onDelete: Cascade)
+  teams_team_challenges_challengingTeamIdToteams teams     @relation("team_challenges_challengingTeamIdToteams", fields: [challengingTeamId], references: [id], onDelete: Cascade)
+
+  @@unique([challengingTeamId, challengedTeamId])
+}
+
+model team_invitations {
+  id        String   @id
+  teamId    Int
+  email     String
+  invitedBy Int
+  status    String   @default("pending")
+  message   String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  User      User     @relation(fields: [invitedBy], references: [id])
+  teams     teams    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, email])
+}
+
+model team_match_confirmations {
+  id           String       @id
+  matchId      String
+  userId       Int
+  status       String       @default("pending")
+  createdAt    DateTime     @default(now())
+  team_matches team_matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  User         User         @relation(fields: [userId], references: [id])
+
+  @@unique([matchId, userId])
+}
+
+model team_match_results {
+  id           String       @id
+  matchId      String       @unique
+  team1Score   Int          @default(0)
+  team2Score   Int          @default(0)
+  winnerId     Int?
+  createdAt    DateTime     @default(now())
+  team_matches team_matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model team_matches {
+  id                                String                     @id
+  team1Id                           Int
+  team2Id                           Int
+  venue                             String?
+  address                           String?
+  scheduledAt                       DateTime
+  status                            String                     @default("scheduled")
+  createdAt                         DateTime                   @default(now())
+  updatedAt                         DateTime
+  team_match_confirmations          team_match_confirmations[]
+  team_match_results                team_match_results?
+  teams_team_matches_team1IdToteams teams                      @relation("team_matches_team1IdToteams", fields: [team1Id], references: [id])
+  teams_team_matches_team2IdToteams teams                      @relation("team_matches_team2IdToteams", fields: [team2Id], references: [id])
+  team_venue_votings                team_venue_votings[]
+}
+
+model team_members {
+  id       String   @id
+  teamId   Int
+  userId   Int
+  role     String   @default("member")
+  status   String   @default("active")
+  joinedAt DateTime @default(now())
+  teams    teams    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  User     User     @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+}
+
+model team_players {
+  idTeam Int
+  idUser Int
+  teams  teams @relation(fields: [idTeam], references: [id])
+  User   User  @relation(fields: [idUser], references: [id])
+
+  @@id([idTeam, idUser])
+}
+
+model team_venue_votes {
+  id                 String             @id
+  venueVotingId      String
+  userId             Int
+  selectedOption     Int
+  createdAt          DateTime           @default(now())
+  User               User               @relation(fields: [userId], references: [id])
+  team_venue_votings team_venue_votings @relation(fields: [venueVotingId], references: [id], onDelete: Cascade)
+
+  @@unique([venueVotingId, userId])
+}
+
+model team_venue_votings {
+  id               String             @id
+  matchId          String
+  attempt          Int                @default(1)
+  option1Venue     String
+  option1Address   String?
+  option2Venue     String
+  option2Address   String?
+  status           String             @default("active")
+  winnerOption     Int?
+  expiresAt        DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  team_venue_votes team_venue_votes[]
+  team_matches     team_matches       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model teams {
+  id                                                       Int                @id @default(autoincrement())
+  name                                                     String             @db.VarChar(100)
+  description                                              String?
+  sportId                                                  Int
+  captainId                                                Int
+  isAvailableForChallenge                                  Boolean            @default(false)
+  status                                                   String             @default("forming")
+  level                                                    String             @default("beginner")
+  location                                                 String?
+  preferredVenue                                           String?
+  preferredAddress                                         String?
+  availableFrom                                            DateTime?
+  availableTo                                              DateTime?
+  availableDays                                            String?
+  hasReservedVenue                                         Boolean            @default(false)
+  reservedVenue                                            String?
+  reservedAddress                                          String?
+  reservedDate                                             DateTime?
+  reservedTime                                             String?
+  reservationNotes                                         String?
+  createdAt                                                DateTime           @default(now())
+  updatedAt                                                DateTime
+  team_challenges_team_challenges_challengedTeamIdToteams  team_challenges[]  @relation("team_challenges_challengedTeamIdToteams")
+  team_challenges_team_challenges_challengingTeamIdToteams team_challenges[]  @relation("team_challenges_challengingTeamIdToteams")
+  team_invitations                                         team_invitations[]
+  team_matches_team_matches_team1IdToteams                 team_matches[]     @relation("team_matches_team1IdToteams")
+  team_matches_team_matches_team2IdToteams                 team_matches[]     @relation("team_matches_team2IdToteams")
+  team_members                                             team_members[]
+  team_players                                             team_players[]
+  User                                                     User               @relation(fields: [captainId], references: [id])
+  Sports                                                   Sports             @relation(fields: [sportId], references: [id])
+}
+
+model venue_votes {
+  id             String        @id
+  venueVotingId  String
+  userId         Int
+  selectedOption Int
+  createdAt      DateTime      @default(now())
+  User           User          @relation(fields: [userId], references: [id])
+  venue_votings  venue_votings @relation(fields: [venueVotingId], references: [id], onDelete: Cascade)
+
+  @@unique([venueVotingId, userId])
+}
+
+model venue_votings {
+  id             String        @id
+  matchId        String
+  attempt        Int           @default(1)
+  status         String        @default("active")
+  option1Venue   String
+  option1Address String?
+  option2Venue   String
+  option2Address String?
+  winnerOption   Int?
+  createdAt      DateTime      @default(now())
+  expiresAt      DateTime
+  updatedAt      DateTime
+  venue_votes    venue_votes[]
+  matches        matches       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+// Nueva tabla para usuarios del dashboard
+model UserDashboard {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  firstName String?   @map("first_name")
+  lastName  String?   @map("last_name")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  complexes Complex[]
+  clients   Client[]
+  bookings  Booking[]
+
+  @@map("user_dashboard")
+}
+
+// Tabla de Complejos deportivos
+model Complex {
+  id              String        @id @default(uuid())
+  name            String
+  address         String
+  phone           String        @map("phone")
+  isActive        Boolean       @default(true) @map("is_active")
+  picture         String?
+  userId          String        @map("user_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  user            UserDashboard @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courts          Court[]
+
+  @@index([userId])
+  @@map("complexes")
+}
+
+// Tabla de Canchas
+model Court {
+  id          String              @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean             @default(true) @map("is_active")
+  picture     String?
+  complexId   String              @map("complex_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  complex     Complex             @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  availability CourtAvailability[]
+
+  @@index([complexId])
+  @@map("courts")
+}
+
+// Tabla de Disponibilidad de Canchas
+model CourtAvailability {
+  id          String    @id @default(uuid())
+  courtId     String    @map("court_id")
+  startDate   DateTime  @map("start_date") // Fecha de inicio del bloqueo
+  endDate     DateTime  @map("end_date") // Fecha de fin del bloqueo
+  startTime   String?   @map("start_time") // Hora de inicio (HH:mm), null = todo el día
+  endTime     String?   @map("end_time") // Hora de fin (HH:mm), null = todo el día
+  reason      String    @default("maintenance") // maintenance, private_event, weather, other
+  description String?   // Descripción adicional del bloqueo
+  isActive    Boolean   @default(true) @map("is_active") // Para activar/desactivar sin eliminar
+  userId      String    @map("user_id") // Usuario que creó el bloqueo
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  court       Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@index([courtId])
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("court_availability")
+}
+
+// Tabla de Clientes
+model Client {
+  id          String    @id @default(uuid())
+  firstName   String    @map("first_name")
+  lastName    String    @map("last_name")
+  email       String?
+  phone       String
+  address     String?
+  document    String?   // DNI, cédula, pasaporte, etc.
+  documentType String?  @map("document_type") // Tipo de documento
+  birthDate   DateTime? @map("birth_date")
+  notes       String?   // Notas adicionales sobre el cliente
+  isActive    Boolean   @default(true) @map("is_active")
+  userId      String    @map("user_id") // Usuario dashboard que creó el cliente
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        UserDashboard @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+
+  @@index([userId])
+  @@index([email])
+  @@index([phone])
+  @@map("clients")
+}
+
+// Tabla de Reservas
+model Booking {
+  id             String   @id @default(uuid())
+  bookingDate    DateTime @map("booking_date") // Fecha de la reserva
+  startTime      DateTime @map("start_time") // Hora de inicio
+  endTime        DateTime @map("end_time") // Hora de fin
+  duration       Int      // Duración en minutos
+  price          Float    // Precio de la reserva
+  status         String   @default("pending") // pending, confirmed, cancelled, completed
+  paymentMethod  String?  @map("payment_method") // cash, card, transfer, etc.
+  paymentStatus  String   @default("pending") @map("payment_status") // pending, paid, refunded
+  notes          String?  // Notas adicionales de la reserva
+  isAppNative    Boolean  @default(false) @map("is_app_native") // true = reserva desde app nativa
+  courtId        String   @map("court_id")
+  clientId       String?  @map("client_id") // Opcional para reservas de app nativa
+  userId         String   @map("user_id") // Usuario que creó la reserva
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  court          Court    @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  client         Client?  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  user           UserDashboard @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courtId])
+  @@index([clientId])
+  @@index([userId])
+  @@index([bookingDate])
+  @@index([status])
+  @@index([isAppNative])
+  @@map("bookings")
+}
+
