@@ -39,15 +39,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('dash/v1/api-docs', app, document);
 
-  // CORS habilitado para el frontend
+  // CORS habilitado para todas las direcciones
   app.enableCors({
-    origin: [
-      'https://dasboard-red-deportiva-front.vercel.app',
-      'https://dasboard-red-deportiva-front-danykhns-projects.vercel.app',
-      'https://dasboard-red-deportiva-front.vercel.app/',
-      'http://localhost:3000',
-      'http://localhost:5173',
-    ],
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
