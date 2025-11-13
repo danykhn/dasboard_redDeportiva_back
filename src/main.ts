@@ -41,7 +41,11 @@ async function bootstrap() {
 
   // CORS habilitado para el frontend
   app.enableCors({
-    origin: ['*'], // URLs de tu frontend
+    origin: [
+      'https://dasboard-red-deportiva-front-danykhns-projects.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
     credentials: true,
   });
 
