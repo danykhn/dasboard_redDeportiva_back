@@ -41,11 +41,11 @@ async function bootstrap() {
 
   // CORS habilitado para el frontend
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // URLs de tu frontend
+    origin: ['*'], // URLs de tu frontend
     credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3009);
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`Swagger documentation available at: ${await app.getUrl()}/dash/v1/api-docs`);
 }
