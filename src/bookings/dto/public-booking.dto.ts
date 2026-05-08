@@ -4,12 +4,14 @@ import {
   IsDateString,
   IsUUID,
   IsNumber,
+  IsInt,
   IsBoolean,
   Min,
   IsEnum,
   ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 // DTO para consultar reservas públicamente
 export class QueryPublicBookingsDto {
@@ -60,7 +62,8 @@ export class QueryPublicBookingsDto {
     default: 1,
   })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
   page?: number;
 
@@ -70,7 +73,8 @@ export class QueryPublicBookingsDto {
     default: 10,
   })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
   limit?: number;
 }
